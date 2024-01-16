@@ -14,21 +14,21 @@ var (
 
 func (gui *Gui) setLayout() {
 	// banners.
-	banner := NewBannerWidget(
-		"banner",
-		0,
-		0,
-		0.19,
-		0.14,
-		"dblab",
-		gocui.ColorMagenta,
-	)
+	// banner := NewBannerWidget(
+	// 	"banner",
+	// 	0,
+	// 	0,
+	// 	0.19,
+	// 	0.14,
+	// 	"dblab",
+	// 	gocui.ColorMagenta,
+	// )
 
 	// table.
 	tables := NewTableWidget(
 		"tables",
 		0,
-		0.16,
+		0,
 		0.19,
 		0.94,
 		"Tables",
@@ -122,7 +122,7 @@ func (gui *Gui) setLayout() {
 	)
 
 	gui.g.SetManager(
-		banner,
+		// banner,
 		tables,
 		navigation,
 		editor,
