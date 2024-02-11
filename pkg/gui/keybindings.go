@@ -14,70 +14,59 @@ type keyBinding struct {
 
 // initialKeyBindings returns an slice with the standard key bindings.
 func initialKeyBindings() []keyBinding {
+
 	bindings := []keyBinding{
 		{
 			view:    "query",
-			key:     gocui.KeyTab,
+			key:     gocui.KeyCtrlP,
 			mod:     gocui.ModNone,
-			handler: nextView("query", "tables"),
+			handler: setViewOnTop("query", "rows"),
+		},
+		{
+			view:    "rows",
+			key:     gocui.KeyCtrlP,
+			mod:     gocui.ModNone,
+			handler: setViewOnTop("rows", "tables"),
 		},
 		{
 			view:    "tables",
-			key:     gocui.KeyTab,
+			key:     gocui.KeyCtrlP,
 			mod:     gocui.ModNone,
-			handler: nextView("tables", "query"),
-		},
-		{
-			view:    "query",
-			key:     gocui.KeyTab,
-			mod:     gocui.ModNone,
-			handler: nextView("query", "rows"),
-		},
-		{
-			view:    "rows",
-			key:     gocui.KeyTab,
-			mod:     gocui.ModNone,
-			handler: nextView("rows", "query"),
-		},
-		{
-			view:    "rows",
-			key:     gocui.KeyTab,
-			mod:     gocui.ModNone,
-			handler: nextView("rows", "tables"),
+			handler: setViewOnTop("tables", "query"),
 		},
 		{
 			view:    "structure",
-			key:     gocui.KeyTab,
+			key:     gocui.KeyCtrlH,
 			mod:     gocui.ModNone,
 			handler: nextView("structure", "tables"),
 		},
 		{
 			view:    "structure",
-			key:     gocui.KeyTab,
+			key:     gocui.KeyCtrlK,
 			mod:     gocui.ModNone,
 			handler: nextView("structure", "query"),
 		},
 		{
 			view:    "constraints",
-			key:     gocui.KeyTab,
+			key:     gocui.KeyCtrlH,
 			mod:     gocui.ModNone,
 			handler: nextView("constraints", "tables"),
 		},
 		{
 			view:    "constraints",
-			key:     gocui.KeyTab,
+			key:     gocui.KeyCtrlK,
 			mod:     gocui.ModNone,
 			handler: nextView("constraints", "query"),
 		},
 		{
 			view:    "indexes",
-			key:     gocui.KeyTab,
+			key:     gocui.KeyCtrlH,
 			mod:     gocui.ModNone,
 			handler: nextView("indexes", "tables"),
 		},
 		{
 			view:    "indexes",
-			key:     gocui.KeyTab,
+			key:     gocui.KeyCtrlK,
 			mod:     gocui.ModNone,
 			handler: nextView("indexes", "query"),
 		},
@@ -130,6 +119,17 @@ func initialKeyBindings() []keyBinding {
 			handler: quit,
 		},
 	}
+
+	// output views navigation.
+	// for _, viewName := range []string{"rows", "structure", "constraints"} {
+	// 	bindings = append(bindings, []keyBinding{
+	// 		{view: viewName, key: 'k', mod: gocui.ModNone, handler: moveCursorVertically("up")},
+	// 		{view: viewName, key: 'j', mod: gocui.ModNone, handler: moveCursorVertically("down")},
+	// 		{view: viewName, key: 'l', mod: gocui.ModNone, handler: moveCursorHorizontally("right")},
+	// 		{view: viewName, key: 'h', mod: gocui.ModNone, handler: moveCursorHorizontally("left")},
+	// 	}...)
+	// }
+
 	// arrow keys navigation.
 	for _, viewName := range []string{"rows", "structure", "constraints"} {
 		bindings = append(bindings, []keyBinding{
@@ -142,13 +142,14 @@ func initialKeyBindings() []keyBinding {
 
 	// defines the navigation on the "tables" view.
 	bindings = append(bindings, []keyBinding{
+		{view: "tables", key: 'k', mod: gocui.ModNone, handler: moveCursorVertically("up")},
 		{view: "tables", key: gocui.KeyArrowUp, mod: gocui.ModNone, handler: moveCursorVertically("up")},
+		{view: "tables", key: 'j', mod: gocui.ModNone, handler: moveCursorVertically("down")},
 		{view: "tables", key: gocui.KeyArrowDown, mod: gocui.ModNone, handler: moveCursorVertically("down")},
 	}...)
 
 	return bindings
 }
-
 func (gui *Gui) keybindings() error {
 	for _, k := range initialKeyBindings() {
 		if err := gui.g.SetKeybinding(k.view, k.key, k.mod, k.handler); err != nil {
@@ -157,22 +158,53 @@ func (gui *Gui) keybindings() error {
 	}
 
 	// SQL helpers
-	if err := gui.g.SetKeybinding("query", gocui.KeyCtrlR, gocui.ModNone, gui.inputQuery()); err != nil {
+	if err := gui.g.SetKeybinding("query", gocui.KeyCtrlSlash, gocui.ModNone, gui.inputQuery()); err != nil {
 		return err
 	}
 
 	if err := gui.g.SetKeybinding("tables", gocui.KeyEnter, gocui.ModNone, gui.metadata); err != nil {
 		return err
 	}
-
+	if err := gui.g.SetKeybinding("tables", gocui.MouseLeft, gocui.ModNone, gui.metadata); err != nil {
+		return err
+	}
 	// SQL pagination.
-	if err := gui.g.SetKeybinding("next", gocui.KeyCtrlSlash, gocui.ModNone, gui.nextPage); err != nil {
+	if err := gui.g.SetKeybinding("next", gocui.MouseLeft, gocui.ModNone, gui.nextPage); err != nil {
 		return err
 	}
 
-	if err := gui.g.SetKeybinding("back", gocui.KeyCtrlBackslash, gocui.ModNone, gui.previousPage); err != nil {
+	if err := gui.g.SetKeybinding("back", gocui.MouseLeft, gocui.ModNone, gui.previousPage); err != nil {
 		return err
 	}
-
+	if err := gui.g.SetKeybinding("tables", gocui.MouseWheelUp, gocui.ModNone, scrollUp); err != nil {
+		return err
+	}
+	if err := gui.g.SetKeybinding("tables", gocui.MouseWheelDown, gocui.ModNone, scrollDown); err != nil {
+		return err
+	}
+	if err := gui.g.SetKeybinding("rows", gocui.MouseWheelUp, gocui.ModNone, scrollUp); err != nil {
+		return err
+	}
+	if err := gui.g.SetKeybinding("rows", gocui.MouseWheelDown, gocui.ModNone, scrollDown); err != nil {
+		return err
+	}
 	return nil
+}
+
+func scrollUp(g *gocui.Gui, v *gocui.View) error {
+	ox, oy := v.Origin()
+	v.SetOrigin(ox, max(0, oy-1)) // Scroll up
+	return nil
+}
+
+func scrollDown(g *gocui.Gui, v *gocui.View) error {
+	ox, oy := v.Origin()
+	v.SetOrigin(ox, oy+1) // Scroll down
+	return nil
+}
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
